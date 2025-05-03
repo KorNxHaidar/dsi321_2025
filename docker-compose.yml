@@ -72,6 +72,21 @@ services:
       - PREFECT_API_URL=http://prefect-server:4200/api
     # networks:
     #   - prefect-network
+  streamlit:
+    build:
+      context: .
+      dockerfile: make/Dockerfile.streamlit
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./visualization:/app
+    environment:
+      - LAKEFS_ACCESS_KEY=access_key
+      - LAKEFS_SECRET_KEY=secret_key
+      - LAKEFS_ENDPOINT=http://lakefs-dev:8000
+    depends_on:
+      - lakefs-dev
+      - prefect-server
 
 volumes:
   postgres_data:
