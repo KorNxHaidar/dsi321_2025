@@ -18,7 +18,9 @@ services:
       - POSTGRES_PASSWORD=prefect
       - POSTGRES_DB=prefect
     volumes:
-      - postgres_data:/var/lib/postgresql@13.8/data
+      - postgres_data:/var/lib/postgresql/data
+    # networks:
+    #   - prefect-network
 
   prefect-server:
     build:
@@ -37,6 +39,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+    # networks:
+    #   - prefect-network
 
   prefect-worker:
     build:
@@ -50,6 +54,8 @@ services:
       - ./make/wait-for-server.sh:/wait-for-server.sh:ro
       - ./src:/home/jovyan/work:rw
     entrypoint: ["/wait-for-server.sh"]
+    # networks:
+    #   - prefect-network
     deploy:
       mode: replicated
       replicas: 2
@@ -64,6 +70,12 @@ services:
       - ./src:/home/jovyan/work:rw
     environment:
       - PREFECT_API_URL=http://prefect-server:4200/api
+    # networks:
+    #   - prefect-network
 
 volumes:
   postgres_data:
+
+# networks:
+#   prefect-network:
+#     driver: bridge

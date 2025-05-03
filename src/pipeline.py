@@ -13,7 +13,11 @@ def retrieve_from_api(
         response.raise_for_status()
         AQI_stats = response.json()
         data = AQI_stats['stations']
-        logger.info(AQI_stats)
+        #logger.info(AQI_stats)
+        num_records = len(data)
+        num_columns = len(next(iter(data), {}))
+
+        logger.info(f"Data contains {num_records} records and {num_columns} columns.")
         logger.info(f"Successfully fetched data from {base_url + path}")
 
         return data
