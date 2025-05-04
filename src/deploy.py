@@ -12,5 +12,5 @@ if __name__ == "__main__":
     ).deploy(
         name="air4thai_pipeline_deployment",
         work_pool_name="default-agent-pool",
-        cron="*/5 * * * *", # Runs at the start of the hour (minute 40).
+        cron="40 * * * *", # Runs at the start of the hour (minute 40).
     )
