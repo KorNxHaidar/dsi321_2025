@@ -62,8 +62,6 @@ st.set_page_config(
 )
 st.title("Air Quality Dashboard from LakeFS")
 df = load_data()
-#col = st.columns((1.5, 4.5, 2), gap='medium')
-
 
 # Set up input widgets
 # st.logo(image="images/streamlit-logo-primary-colormark-lighttext.png", 
@@ -98,5 +96,24 @@ with st.sidebar:
     station_name.insert(0, "ทั้งหมด")
     station = st.selectbox("Select Station", station_name)
 
+df_filtered = filter_data(df, start_date, end_date, station)
 
+# Container for KPI and main content
+placeholder = st.empty()
+
+with placeholder.container():
+
+    if not df_filtered.empty:
+        # Scorecard
+        avg_aqi = df_filtered['PM25.aqi'].mean()
+        avg_color = df_filtered['PM25.color_id'].mean()
+        area_highest_aqi = df_filtered.groupby('areaTH')['PM25.aqi'].mean().idxmax()
+        area_highest_aqi_val = df_filtered.groupby('areaTH')['PM25.aqi'].mean().max()
+
+        kpi1, kpi2, kpi3 = st.columns(3)
+        kpi1.metric(label="🌡️ ค่าเฉลี่ย PM2.5 AQI", value=f"{avg_aqi:.2f}")
+        kpi2.metric(label="🎨 ค่าเฉลี่ย PM2.5 Color ID", value=f"{avg_color:.2f}")
+        kpi3.metric(label="📍 พื้นที่ AQI สูงสุด", value=area_highest_aqi, delta=f"{area_highest_aqi_val:.2f}")
+    else:
+        st.warning("ไม่พบข้อมูลในช่วงเวลาหรือสถานีที่เลือก")
 
