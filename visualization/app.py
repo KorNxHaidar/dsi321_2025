@@ -7,6 +7,8 @@ import streamlit as st
 import pyarrow.parquet as pq
 import s3fs
 import time
+from openai import OpenAI
+from langchain.prompts import PromptTemplate
 from zoneinfo import ZoneInfo
 from datetime import timedelta, datetime
 
@@ -22,14 +24,6 @@ fs = s3fs.S3FileSystem(
     secret=SECRET_KEY,
     client_kwargs={'endpoint_url': lakefs_endpoint}
 )
-
-if 'last_load_time' not in st.session_state:
-    st.session_state.last_load_time = time.time()
-
-if time.time() - st.session_state.last_load_time > 2400:
-    st.cache_data.clear()
-    st.session_state.last_load_time = time.time()
-    st.experimental_rerun()
 
 @st.cache_data(ttl=2400)
 def load_data():
@@ -63,6 +57,40 @@ def filter_data(df, start_date, end_date, station):
     df_filtered = df_filtered[df_filtered['PM25.aqi'] >= 0]
 
     return df_filtered
+
+def generate_response(context):
+    system_prompt = typhoon_prompt.format(context=context)
+    chat_completion = client.chat.completions.create(
+        model="typhoon-v2-70b-instruct",
+        messages=[{"role": "user", "content": system_prompt}],
+        max_tokens=2048,
+        temperature=0.7,
+    )
+    return chat_completion.choices[0].message.content
+
+# Typhoon LLM API
+typhoon_token = "sk-Rl48oPMyO4lVARDGidyzc8tZLBQQxzNdxtXFQWJrDxJOx1j8"
+client = OpenAI(
+    api_key=typhoon_token,
+    base_url='https://api.opentyphoon.ai/v1'
+)
+
+# LangChain Prompt
+typhoon_prompt = PromptTemplate(
+    input_variables=["context"],
+    template="""
+    คุณคือนักวิเคราะห์ข้อมูลสิ่งแวดล้อม หน้าที่ของคุณคือการวิเคราะห์ข้อมูลสภาพอากาศและมลพิษทางอากาศที่เกิดขึ้นในช่วงเวลาที่กำหนด 
+    และสรุป Insight ที่สำคัญเพื่อช่วยให้ประชาชนหรือหน่วยงานที่เกี่ยวข้องสามารถตัดสินใจเชิงนโยบายได้อย่างเหมาะสม
+
+    {context}
+
+    กรุณาวิเคราะห์และสรุปข้อมูลที่ได้รับ โดยให้ผลลัพธ์ดังนี้:
+    1. สรุปภาพรวมของสภาพอากาศและคุณภาพอากาศในช่วงวันเวลาดังกล่าว
+    2. หา Insight ที่น่าสนใจจากข้อมูลอย่างน้อย 3 ข้อ เช่น แนวโน้มที่ผิดปกติ ความสัมพันธ์ระหว่างค่าต่าง ๆ
+    3. ข้อเสนอแนะหรือคำเตือนที่เหมาะสมกับสถานการณ์
+    """
+)
+
 
 
 st.set_page_config(
@@ -109,6 +137,26 @@ with st.sidebar:
     station = st.selectbox("Select Station", station_name)
 
 df_filtered = filter_data(df, start_date, end_date, station)
+
+if st.button("วิเคราะห์ด้วย Typhoon AI"):
+    if not df_filtered.empty:
+        summary = df_filtered.describe(include='all').to_string()
+        insight_output = generate_response(summary)
+        st.subheader("🔍 วิเคราะห์โดย Typhoon AI")
+        st.markdown(insight_output)
+    else:
+        st.warning("ไม่สามารถวิเคราะห์ได้")
+
+# ตรวจสอบว่ามีการเก็บเวลาล่าสุดไว้หรือยัง
+if "last_load_time" not in st.session_state:
+    st.session_state.last_load_time = time.time()
+
+# ถ้าผ่านไปมากกว่า 1 ชั่วโมง ให้เคลียร์ cache แล้วรีโหลด
+if time.time() - st.session_state.last_load_time > 2400:
+    st.cache_data.clear()
+    st.session_state.last_load_time = time.time()
+    st.experimental_rerun()
+
 
 # Container for KPI and main content
 placeholder = st.empty()
