@@ -54,6 +54,20 @@ To run it locally:
    ```
    This creates a deployment named `data-pipeline` in the `default-agent-pool` work pool, scheduled to run at minute 40 of every hour. (`cron="40 * * * *"`).
 
+## <b>📊 Streamlit Interface</b> : Real-Time Air Quality Dashboard
+
+![alt text](DemoWeb.png)
+
+### <b>Key Dashboard Features:</b>
+
+- <b>Real-time PM2.5 visualization</b> for various provinces
+
+- <b>Time-series trend graphs</b> for selected stations
+
+- <b>Interactive map</b> with station markers and AQI color coding
+
+- <b>Typhoon LLM-powered summary insights</b> per region/time
+
 ## 🧬 Data Schema
 
 The data schema is defined in `src/SCHEMA.md`. For this air quality data example:
@@ -93,20 +107,6 @@ The data schema is defined in `src/SCHEMA.md`. For this air quality data example
 - **hour**: Hour of data record.
 
 Key columns are used for data quality checks (no missing values allowed).
-
-## <b>📊 Streamlit Interface</b> : Real-Time Air Quality Dashboard
-
-![alt text](DemoWeb.png)
-
-### <b>Key Dashboard Features:</b>
-
-- <b>Real-time PM2.5 visualization</b> for various provinces
-
-- <b>Time-series trend graphs</b> for selected stations
-
-- <b>Interactive map</b> with station markers and AQI color coding
-
-- <b>Typhoon LLM-powered summary insights</b> per region/time
 
 ## 🛠️ Technologies Used
 - <b>Prefect.io</b> - For workflow orchestration and scheduling
