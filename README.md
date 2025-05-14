@@ -23,10 +23,68 @@ To make insights more accessible and interactive, the processed data is visualiz
 ### 🚀 Getting Started
 To run it locally:
 
+1. **Clone the Repository**:
+
    ```bash
    $ git clone <this-repo-url>
 
    $ cd <this-repo-folder>
-
-   $ docker compose up -d --build
    ```    
+2. **Start Docker Services**:
+   Launch Prefect server and Streamlit:
+   ```bash
+   docker-compose up -d --build
+   ```
+
+3. **Deploy Prefect Flow**:
+   Deploy the pipeline with a start of the hour (minute 40).:
+   ```bash
+   python src/pipeline.py deploy
+
+   # Or go to http://localhost:8888 (JupyterLab)
+   ## Start new terminal session
+
+   python deploy.py
+   ```
+   This creates a deployment named `data-pipeline` in the `default-agent-pool` work pool, running at the start of the hour minute 40. (`cron="40 * * * *"`).
+
+## Data Schema
+
+The data schema is defined in `SCHEMA.md`. For this air quality data example:
+
+```
+{
+  "columns": [
+    "timestamp", "stationID", "nameTH", "nameEN", "areaTH",
+    "areaEN", "stationType", "lat", "long", "PM25.color_id",
+    "PM25.aqi", "year", "month", "day", "hour"
+  ],
+  "types": [
+    "TEXT", "TEXT", "TEXT", "TEXT", "TEXT", "TEXT",
+    "TEXT", "REAL", "REAL", "INTEGER", "INTEGER",
+    "INTEGER", "INTEGER", "INTEGER", "INTEGER"
+  ],
+  "key_columns": [
+    "timestamp", "stationID", "lat", "long", "PM25.aqi"
+  ]
+}
+```
+
+- **timestamp**: ISO format timestamp of data collection.  
+- **stationID**: Station ID code.  
+- **nameTH**: Station name in Thai.  
+- **nameEN**: Station name in English.  
+- **areaTH**: Area name in Thai.  
+- **areaEN**: Area name in English.  
+- **stationType**: Type of the station (e.g., roadside, general area).  
+- **lat**: Latitude of the station.  
+- **long**: Longitude of the station.  
+- **PM25.color_id**: Color ID for visualization based on PM2.5 level.  
+- **PM25.aqi**: PM2.5 Air Quality Index (AQI).  
+- **year**: Year of data record.  
+- **month**: Month of data record.  
+- **day**: Day of data record.  
+- **hour**: Hour of data record.
+
+Key columns are used for data quality checks (no missing values).  
+Adapt the schema for your data source as needed.

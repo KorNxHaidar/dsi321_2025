@@ -41,8 +41,8 @@ def data_processing(data:list[dict]) -> pd.DataFrame:
     # Normalize AQILast with prefix to avoid column name conflict
     expanded_aqi = pd.json_normalize(df['AQILast'])
     df = pd.concat([df, expanded_aqi], axis=1)
-    df['time'] = df['time'].mode()[0]
-    df['date'] = df['date'].mode()[0]
+    df['time'] = df[df['date'] == df['date'].max()]['time'].max()
+    df['date'] = df['date'].max()
     df['timestamp'] = pd.to_datetime(df['date'] + ' ' + df['time'])
 
     # Extract datetime components
@@ -85,6 +85,7 @@ def load_to_lakefs(df: pd.DataFrame, lakefs_s3_path: str, storage_options: dict)
             lakefs_s3_path,
             storage_options=storage_options,
             partition_cols=['year', 'month', 'day', 'hour'],
+            engine="pyarrow",
         )
         logger.info(f"✅ Data successfully loaded to: {lakefs_s3_path}")
     except Exception as e:

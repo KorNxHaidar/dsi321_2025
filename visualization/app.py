@@ -29,7 +29,7 @@ fs = s3fs.S3FileSystem(
 def load_data():
     lakefs_path = "s3://air-quality/main/airquality.parquet/year=2025"
     data_list = fs.glob(f"{lakefs_path}/*/*/*/*")
-    df_all = pd.concat([pd.read_parquet(f"s3://{path}", filesystem=fs) for path in data_list], ignore_index=True)
+    df_all = pd.concat([pd.read_parquet(f"s3://{path}", engine="pyarrow", filesystem=fs) for path in data_list], ignore_index=True)
     # Change Data Type
     df_all['lat'] = pd.to_numeric(df_all['lat'], errors='coerce')
     df_all['long'] = pd.to_numeric(df_all['long'], errors='coerce')
@@ -184,7 +184,7 @@ df_filtered = filter_data(df, start_date, end_date, station)
 if not st.session_state.analyzed:
     if st.button("🗲 TYPHOON LLMs"):
         if not df_filtered.empty:
-            with st.spinner("⏳ กำลังวิเคราะห์ข้อมูลด้วย Typhoon AI..."):
+            with st.spinner("⏳ กำลังวิเคราะห์ข้อมูลด้วย AI..."):
                 summary = df_filtered.describe(include='all').to_string()
                 insight_output = generate_response(summary)
                 st.session_state.insight_output = insight_output
