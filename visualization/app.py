@@ -88,6 +88,22 @@ typhoon_prompt = PromptTemplate(
     1. สรุปภาพรวมของสภาพอากาศและคุณภาพอากาศในช่วงวันเวลาดังกล่าว
     2. หา Insight ที่น่าสนใจจากข้อมูลอย่างน้อย 3 ข้อ เช่น แนวโน้มที่ผิดปกติ ความสัมพันธ์ระหว่างค่าต่าง ๆ
     3. ข้อเสนอแนะหรือคำเตือนที่เหมาะสมกับสถานการณ์
+
+    Output example:
+    
+    📌 สรุปภาพรวม:
+    - ค่าฝุ่น PM2.5 สูงสุดอยู่ที่ 103 µg/m³ โดยสูงสุดที่เวลา 14:00 น.
+    - ค่าฝุ่น PM2.5 เฉลี่ยอยู่ที่ 60 µg/m³ เกินค่ามาตรฐาน WHO
+    - พื้นที่ที่มีระดับ PM2.5 สูงสุดที่ ต.ห้วยโก๋น 
+    
+    🔍 Insight:
+    ค่าฝุ่น PM2.5 สูงสุดเกิดขึ้นในช่วง 11:00 - 13:00 น. ซึ่งสอดคล้องกับอุณหภูมิที่สูงและลมนิ่ง
+    มีแนวโน้มว่าคุณภาพอากาศแย่ลงในช่วงบ่าย เนื่องจากปัจจัยทางสภาพอากาศ
+    ความชื้นต่ำในช่วงกลางวันอาจเป็นตัวแปรที่เกี่ยวข้องกับค่าฝุ่นที่สูงขึ้น
+
+    ⚠️ คำแนะนำ:
+    ควรหลีกเลี่ยงการออกกำลังกายกลางแจ้งในช่วง 10:00 - 15:00 น.
+    กลุ่มเสี่ยงควรสวมหน้ากากและอยู่ในอาคารที่ปิดมิดชิด
     """
 )
 
@@ -106,6 +122,20 @@ st.caption(f"อัปเดตล่าสุด: {thai_time.strftime('%Y-%m-%d
 # Set up input widgets
 # st.logo(image="images/streamlit-logo-primary-colormark-lighttext.png", 
 #         icon_image="images/streamlit-mark-color.png")
+
+# --- สร้าง session state เริ่มต้นก่อน ---
+if "analyzed" not in st.session_state:
+    st.session_state.analyzed = False
+
+if "insight_output" not in st.session_state:
+    st.session_state.insight_output = ""
+
+if "prev_start_date" not in st.session_state:
+    st.session_state.prev_start_date = None
+if "prev_end_date" not in st.session_state:
+    st.session_state.prev_end_date = None
+if "prev_station" not in st.session_state:
+    st.session_state.prev_station = None
 
 # Sidebar settings
 with st.sidebar:
@@ -136,26 +166,40 @@ with st.sidebar:
     station_name.insert(0, "ทั้งหมด")
     station = st.selectbox("Select Station", station_name)
 
+# --- เช็คว่าค่าที่เลือกเปลี่ยนไปไหม แล้วรีเซ็ตสถานะ ---
+if (
+    st.session_state.prev_start_date != start_date or
+    st.session_state.prev_end_date != end_date or
+    st.session_state.prev_station != station
+):
+    st.session_state.analyzed = False
+    st.session_state.insight_output = ""
+
+st.session_state.prev_start_date = start_date
+st.session_state.prev_end_date = end_date
+st.session_state.prev_station = station
+
 df_filtered = filter_data(df, start_date, end_date, station)
 
-if st.button("วิเคราะห์ด้วย Typhoon AI"):
-    if not df_filtered.empty:
-        summary = df_filtered.describe(include='all').to_string()
-        insight_output = generate_response(summary)
-        st.subheader("🔍 วิเคราะห์โดย Typhoon AI")
-        st.markdown(insight_output)
-    else:
-        st.warning("ไม่สามารถวิเคราะห์ได้")
+# แสดงปุ่มเฉพาะเมื่อยังไม่กดวิเคราะห์
+if not st.session_state.analyzed:
+    if st.button("วิเคราะห์ด้วย Typhoon AI"):
+        if not df_filtered.empty:
+            with st.spinner("⏳ กำลังวิเคราะห์ข้อมูลด้วย Typhoon AI..."):
+                summary = df_filtered.describe(include='all').to_string()
+                insight_output = generate_response(summary)
+                st.session_state.insight_output = insight_output
+                st.session_state.analyzed = True
+                st.session_state.show_popup = True
+                st.rerun()  # 🔄 รีรันใหม่เพื่ออัปเดต UI ทันที
+        else:
+            st.warning("ไม่สามารถวิเคราะห์ได้ เนื่องจากไม่มีข้อมูล")
 
-# ตรวจสอบว่ามีการเก็บเวลาล่าสุดไว้หรือยัง
-if "last_load_time" not in st.session_state:
-    st.session_state.last_load_time = time.time()
+# แสดงบทวิเคราะห์ถ้าพร้อมแล้ว
+if st.session_state.analyzed and st.session_state.get("show_popup", False):
+    with st.expander("🔍 บทวิเคราะห์โดย Typhoon AI", expanded=True):  # 👈 จะเปิดอัตโนมัติ
+        st.markdown(st.session_state.insight_output)
 
-# ถ้าผ่านไปมากกว่า 1 ชั่วโมง ให้เคลียร์ cache แล้วรีโหลด
-if time.time() - st.session_state.last_load_time > 2400:
-    st.cache_data.clear()
-    st.session_state.last_load_time = time.time()
-    st.experimental_rerun()
 
 
 # Container for KPI and main content
