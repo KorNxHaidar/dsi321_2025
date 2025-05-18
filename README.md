@@ -45,9 +45,11 @@ To run it locally:
 > [!IMPORTANT]  
 > Before executing `deploy.py`, you must first **create a repository named `air-quality-data` in LakeFS**.  
 
-> [!TIP] <br>
+> [!TIP]  
 > You can do this via the LakeFS web interface or using the CLI command:  
-> `lakectl repo create lakefs://air-quality-data`
+> ```
+> lakectl repo create lakefs://air-quality-data
+> ```
 
 
 3. **Deploy Prefect Flow**:
