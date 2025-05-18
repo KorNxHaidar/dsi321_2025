@@ -42,6 +42,14 @@ To run it locally:
    <b>LakeFS</b> : http://localhost:8001 (changed from default 8000) <br>
    <b>Stramlit</b> : http://localhost:8501
 
+> [!IMPORTANT]  
+> Before executing `deploy.py`, you must first **create a repository named `air-quality-data` in LakeFS**.  
+
+> [!TIP] <br>
+> You can do this via the LakeFS web interface or using the CLI command:  
+> `lakectl repo create lakefs://air-quality-data`
+
+
 3. **Deploy Prefect Flow**:
    Deploy the pipeline with a start of the hour (minute 40).:
    ```bash
@@ -68,6 +76,30 @@ To run it locally:
 
 - <b>Typhoon LLM-powered summary insights</b> per region/time
 
+## 🤖 <b>Typhoon LLM Integration:</b> Summarization & Insight Generation
+To enhance the real-time air quality dashboard, we integrated Typhoon LLM, a Thai language large language model, to automatically generate concise summaries and actionable insights from air quality data.
+
+### <b>Why Typhoon LLM?</b>
+- <b>Thai Language Support</b> <br>
+Typhoon LLM is trained on extensive Thai text data, making it ideal for interpreting and generating insights in Thai for local users.
+
+- <b>Powerful for Summarization</b> <br>
+It excels at summarizing trends and highlighting anomalies, such as identifying provinces with unusually high PM2.5 levels or suggesting areas that may require attention.
+
+- <b>Real-Time Integration</b> <br>
+Combined with Prefect and Streamlit, Typhoon LLM enables real-time insight generation as new data flows in.
+
+### <b>Techniques Used</b>
+- <b>Prompt Engineering</b> <br>
+We designed clear and structured prompts, e.g.:
+“Summarize the air quality situation in Thailand for {time range} and highlight provinces with high PM2.5 levels.”
+
+- <b>Workflow Integration via Prefect</b> <br>
+A task was added in the Prefect pipeline to send cleaned and updated data to Typhoon LLM for automatic summarization.
+
+- <b>Insight Cards in Streamlit</b> <br>
+The model's output is displayed as user-friendly “insight cards” on the dashboard, helping users quickly understand key information without analyzing charts in detail.
+
 ## 🧬 Data Schema
 
 The data schema is defined in `src/SCHEMA.md`. For this air quality data example:
@@ -85,7 +117,9 @@ The data schema is defined in `src/SCHEMA.md`. For this air quality data example
     "float64", "int64", "int64", "int32", "int32"
     ],
   "key_columns": [
-    "timestamp", "stationID", "lat", "long", "PM25.aqi"
+    "timestamp", "stationID", "nameTH", "nameEN", "areaTH",
+    "areaEN", "stationType", "lat", "long", "PM25.color_id",
+    "year", "month", "day", "hour"
   ]
 }
 ```
